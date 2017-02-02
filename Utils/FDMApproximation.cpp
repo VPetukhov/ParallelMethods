@@ -1,14 +1,14 @@
+#include <stdexcept>
 #include "TaskFunctions.h"
 
 #include "FDMApproximation.h"
 
 void fdm_slau_assembling(const fdm_grid &grid, sparse_matrix &mSM, vector &vRightPart)
 {
-	std::vector<size_t> vNeighbours(4);
 	double rH2 = grid.m_rH * grid.m_rH;
 
 	// assemble SLAE
-	for (size_t nNode = 0; nNode < grid.m_nSize; ++nNode)
+	for (size_t nNode = 0; nNode < grid.nodes_number(); ++nNode)
 	{
 		if (grid.node_is_boundary(nNode))
 		{
@@ -22,9 +22,11 @@ void fdm_slau_assembling(const fdm_grid &grid, sparse_matrix &mSM, vector &vRigh
 			vRightPart[nNode] = rH2 * Task::right_part(grid.coordinates(nNode));
 			mSM.at(nNode, nNode) = 4.0;
 
-			grid.fill_neighbours(nNode, vNeighbours);
-			for (size_t neighbourInd : vNeighbours)
+			for (size_t neighbourInd : grid.neighbours(nNode))
 			{
+				if (neighbourInd == fdm_grid::EMPTY_NEIGHBOUR)
+					throw std::runtime_error("Unexpected index for neighbout to " + std::to_string(nNode));
+
 				if (grid.node_is_boundary(neighbourInd))
 				{
 					// take into account boundary condition for SLAE symmetrization

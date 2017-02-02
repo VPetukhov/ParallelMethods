@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <iostream>
+#include <iomanip>
 
 #include "TaskFunctions.h"
 #include "FDMApproximation.h"
@@ -18,25 +20,42 @@ int main()
 
 	// allocate SLAE
 	// - sparse matrix
-	sparse_matrix mA(grid.m_nSize, nBWidth);
+	sparse_matrix mA(grid.nodes_number(), nBWidth);
 	// - solution and right part
-	vector vSolution(grid.m_nSize), vRightPart(grid.m_nSize);
+	vector vSolution(grid.nodes_number()), vRightPart(grid.nodes_number());
 
 	// calculate stiffness matrix and right part
 	fdm_slau_assembling(grid, mA, vRightPart);
 
 	// solve SLAE
-	PCGM(mA, vSolution, vRightPart, 1e-9);
+	size_t nIterationNum = PCGM(mA, vSolution, vRightPart, 1e-9);
 
 	// calc max error
 	double rMaxError = 0.0;
-	for (size_t nNode = 0; nNode < grid.m_nSize; ++nNode)
+	for (size_t nNode = 0; nNode < grid.nodes_number(); ++nNode)
 	{
 		rMaxError = std::max(fabs(vSolution[nNode] - Task::exact_solution(grid.coordinates(nNode))), rMaxError);
 	}
 
-	printf("h     = %1.5f\n", grid.m_rH);
-	printf("Error = %1.10f\n", rMaxError);
+	std::cout << "h = " << std::setprecision(5) << grid.m_rH << std::endl;
+	std::cout << "Error = " << std::setprecision(10) << rMaxError << std::endl;
+	std::cout << "#Iterations = " << nIterationNum << std::endl;
+
+	std::cout << "Solution:\n";
+	for (size_t nRow = 0; nRow < nGridParam; ++nRow)
+	{
+		for (size_t nColumn = 0; nColumn < nGridParam; ++nColumn)
+		{
+			std::cout << vSolution[nRow * nGridParam + nColumn] << ' ';
+		}
+		std::cout << std::endl;
+	}
+
+	std::cout << "Right part:\n";
+	for (size_t nInd = 0; nInd < nGridParam; ++nInd)
+	{
+		std::cout << vRightPart[nInd] << std::endl;
+	}
 
 	//int    nI, nJ;
 	/*for (nI = 0; nI < mA.n_rows(); nI++)

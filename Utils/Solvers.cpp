@@ -1,6 +1,6 @@
 #include "Solvers.h"
 
-void PCGM(const sparse_matrix& mA, vector& vSol, const vector& vRightPart, double rEps)
+size_t PCGM(const sparse_matrix& mA, vector& vSol, const vector& vRightPart, double rEps)
 {
 	size_t  nSize = vRightPart.size();
 
@@ -13,7 +13,8 @@ void PCGM(const sparse_matrix& mA, vector& vSol, const vector& vRightPart, doubl
 	vResiduals = vGradient;
 	double rBRR1 = vResiduals * vGradient;
 
-	for (size_t iteration_num = 0; (iteration_num < nSize) && (vGradient.norm_inf() > rEps); ++iteration_num)
+	size_t nIterationNum;
+	for (nIterationNum = 0; (nIterationNum < nSize) && (vGradient.norm_inf() > rEps); ++nIterationNum)
 	{
 		vTemp = mA.vector_multiply(vResiduals);
 		double rAlpha = rBRR1 / (vTemp * vResiduals);
@@ -29,4 +30,5 @@ void PCGM(const sparse_matrix& mA, vector& vSol, const vector& vRightPart, doubl
 		vTemp.add_scale_vector(vResiduals, rBetta);
 		vResiduals = vTemp;
 	}
+	return nIterationNum;
 }
