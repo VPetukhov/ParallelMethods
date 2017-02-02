@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(ParallelMethids)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 find_package(Boost 1.54.0 COMPONENTS unit_test_framework REQUIRED)
 
@@ -14,9 +14,9 @@ FILE(GLOB UTIL_SOURCES Utils/*.cpp)
 add_library(Utils ${UTIL_SOURCES})
 
 set(SOURCE_FILES main.cpp)
-add_executable(Smirnov3 ${SOURCE_FILES})
+add_executable(Parallel ${SOURCE_FILES})
 
-target_link_libraries(Smirnov3 Utils ${LIBRARIES})
+target_link_libraries(Parallel Utils ${LIBRARIES})
 
 set (TESTS Tests)
 add_executable (${TESTS} ${PROJECT_SOURCE_DIR}/Tests.cpp)

@@ -6,7 +6,7 @@
 
 int main()
 {
-	int nGridParam, nBWidth, nNode;
+	size_t nGridParam, nBWidth;
 
 	// set the partition number of the square side
 	nGridParam = 4;
@@ -30,9 +30,9 @@ int main()
 
 	// calc max error
 	double rMaxError = 0.0;
-	for (nNode = 0; nNode < grid.m_nSize; ++nNode)
+	for (size_t nNode = 0; nNode < grid.m_nSize; ++nNode)
 	{
-		rMaxError = std::max(fabs(vSolution[nNode] - exact_solution(grid.m_vCoords[nNode])), rMaxError);
+		rMaxError = std::max(fabs(vSolution[nNode] - Task::exact_solution(grid.coordinates(nNode))), rMaxError);
 	}
 
 	printf("h     = %1.5f\n", grid.m_rH);
