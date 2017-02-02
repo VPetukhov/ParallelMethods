@@ -57,37 +57,6 @@ int main()
 		std::cout << vRightPart[nInd] << std::endl;
 	}
 
-	//int    nI, nJ;
-	/*for (nI = 0; nI < mA.n_rows(); nI++)
-	{
-	  printf("\n");
-	  for (nJ = 0; nJ < mA.n_columns(); nJ++)
-	  {
-		printf("%5.1f ", mA(nI, nJ));
-	  }
-	}
-	printf("\n");
-  */
-	//sparse_matrix::iterator itA(mA);
-
-	/*for (itA.First1(); !itA.IsDone1(); itA.Next1())
-	{
-	  printf("\n");
-	  for (itA.First2(); !itA.IsDone2(); itA.Next2())
-	  {
-		printf("%5.1f(%d %d) ", *itA, itA.first_index(), itA.second_index());
-	  }
-	}*/
-
-	/*for (nI = 0; nI < mA.n_rows(); nI++)
-	{
-	  printf("\n");
-	  for (itA.First2(nI); !itA.IsDone2(); itA.Next2())
-	  {
-		printf("%5.1f(%d %d) ", *itA, itA.first_index(), itA.second_index());
-	  }
-	}*/
-
 	return 0;
 }
 

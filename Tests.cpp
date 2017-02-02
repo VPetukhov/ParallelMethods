@@ -21,17 +21,17 @@ BOOST_AUTO_TEST_SUITE(TestTools)
 		};
 
 		sparse_matrix mA(rank, rank);
-		for (int i = 0; i < rank; ++i)
+		for (size_t i = 0; i < rank; ++i)
 		{
-			for (int j = 0; j < rank; ++j)
+			for (size_t j = 0; j < rank; ++j)
 			{
 				mA.at(i, j) = a[i][j];
 			}
 		}
 
-		for (int i = 0; i < rank; ++i)
+		for (size_t i = 0; i < rank; ++i)
 		{
-			for (int j = 0; j < rank; ++j)
+			for (size_t j = 0; j < rank; ++j)
 			{
 				BOOST_CHECK(mA.at(i, j) == a[i][j]);
 			}
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_SUITE(TestTools)
 
 		sparse_matrix mA(equationRank, 3);
 		vector vRightPart(equationRank);
-		for (int i = 0; i < equationRank; ++i)
+		for (size_t i = 0; i < equationRank; ++i)
 		{
 			mA.at(i, i) = 1;
 			vRightPart[i] = 1;
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_SUITE(TestTools)
 		vector vSol(equationRank);
 		PCGM(mA, vSol, vRightPart, eps);
 
-		for (int i = 0; i < equationRank; ++i)
+		for (size_t i = 0; i < equationRank; ++i)
 		{
 			BOOST_CHECK(std::abs(vSol[i] - vRightPart[i]) < eps);
 		}
@@ -79,9 +79,9 @@ BOOST_AUTO_TEST_SUITE(TestTools)
 
 		sparse_matrix mA(equationRank, equationRank);
 		vector vRightPart(equationRank);
-		for (int i = 0; i < equationRank; ++i)
+		for (size_t i = 0; i < equationRank; ++i)
 		{
-			for (int j = 0; j < equationRank; ++j)
+			for (size_t j = 0; j < equationRank; ++j)
 			{
 				mA.at(i, j) = a[i][j];
 			}

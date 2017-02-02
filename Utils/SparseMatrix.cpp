@@ -3,6 +3,30 @@
 
 #include "SparseMatrix.h"
 
+template <typename VALUE_TYPE>
+static VALUE_TYPE **new_matrix(size_t n_rows, size_t n_columns)
+{
+	VALUE_TYPE **ppMatrix = new VALUE_TYPE *[n_rows];
+	ppMatrix[0] = new VALUE_TYPE[n_rows * n_columns];
+
+	for (int i = 1; i < n_rows; i++)
+	{
+		ppMatrix[i] = ppMatrix[i - 1] + n_columns;
+	}
+
+	return ppMatrix;
+}
+
+/**
+ * @memo    free a matrix
+ */
+template <typename VALUE_TYPE>
+static void delete_matrix(VALUE_TYPE **ppMatrix)
+{
+	delete[] ppMatrix[0];
+	delete[] ppMatrix;
+}
+
 void sparse_matrix::resize(size_t nRows, size_t nColumns, size_t nStoredColumns)
 {
 	this->delete_sm();
@@ -68,17 +92,6 @@ double &sparse_matrix::at(size_t nI, size_t nJ)
 	}
 
 	throw std::runtime_error("incorrect n_stored_columns of the matrix");
-}
-
-void sparse_matrix::del_row(int nRow)
-{
-	int nK;
-
-	for (nK = 0; nK < _n_stored_columns; nK++)
-	{
-		_m_indices[nRow][nK] = NOT_INDEX;
-		_m_values[nRow][nK] = 0;
-	}
 }
 
 vector sparse_matrix::vector_multiply(const vector &vIn) const

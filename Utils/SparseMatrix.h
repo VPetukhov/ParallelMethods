@@ -2,31 +2,6 @@
 
 #include <valarray>
 
-template<typename VALUE_TYPE>
-VALUE_TYPE **new_matrix(size_t n_rows, size_t n_columns)
-{
-	VALUE_TYPE **ppMatrix = new VALUE_TYPE *[n_rows];
-	ppMatrix[0] = new VALUE_TYPE[n_rows * n_columns];
-
-	for (int i = 1; i < n_rows; i++)
-	{
-		ppMatrix[i] = ppMatrix[i - 1] + n_columns;
-	}
-
-	return ppMatrix;
-}
-
-/**
- * @memo    free a matrix
- */
-template<typename VALUE_TYPE>
-void delete_matrix(VALUE_TYPE **ppMatrix)
-{
-	delete[] ppMatrix[0];
-	delete[] ppMatrix;
-}
-
-
 class vector;
 
 class sparse_matrix
@@ -77,94 +52,19 @@ public:
 	void resize(size_t nRows, size_t nColumns, size_t nStoredColumns);
 
 	size_t n_rows() const
-	{ return _n_rows; }
+	{ return this->_n_rows; }
 
 	size_t n_columns() const
-	{ return _n_columns; }
+	{ return this->_n_columns; }
 
 	size_t n_stored_columns() const
-	{ return _n_stored_columns; }
+	{ return this->_n_stored_columns; }
 
 	double operator()(int rowInd, int columnInd) const;
 
 	double &at(size_t nI, size_t nJ);
 
-	void del_row(int nRow);
-
 	vector vector_multiply(const vector &vIn) const;
-
-	class iterator
-	{
-		sparse_matrix &m_refMatrix;
-		int m_nRow;
-		int m_nNonzero;
-
-
-	public:
-		iterator(sparse_matrix &refMatrix)
-				: m_refMatrix(refMatrix), m_nRow(), m_nNonzero()
-		{}
-
-		// access interface
-		double operator*() const
-		{
-			return m_refMatrix._m_values[m_nRow][m_nNonzero];
-		}
-
-		double &operator*()
-		{
-			return m_refMatrix._m_values[m_nRow][m_nNonzero];
-		}
-
-		int first_index() const
-		{
-			return m_nRow;
-		}
-
-		int second_index() const
-		{
-			return m_refMatrix._m_indices[m_nRow][m_nNonzero];
-		}
-
-		// iterator interface
-		void First1()
-		{
-			m_nRow = 0;
-			return;
-		}
-
-		bool IsDone1() const
-		{
-			return m_nRow >= m_refMatrix.n_rows();
-		}
-
-		void Next1()
-		{
-			++m_nRow;
-		}
-
-		void First2()
-		{
-			m_nNonzero = 0;
-		}
-
-		void First2(int nRow)
-		{
-			m_nRow = nRow;
-			m_nNonzero = 0;
-		}
-
-		bool IsDone2() const
-		{
-			return m_nNonzero >= m_refMatrix.n_stored_columns() ||
-				   sparse_matrix::NOT_INDEX == m_refMatrix._m_indices[m_nRow][m_nNonzero];
-		}
-
-		void Next2()
-		{
-			++m_nNonzero;
-		}
-	};
 }; // end of class sparse_matrix declaration
 
 class vector : public std::valarray<double>
@@ -192,7 +92,7 @@ public:
 
 	double norm_inf()
 	{
-		return sqrt((*this) * (*this));
+		return this->apply(std::fabs).max();
 	}
 
 	void add_scale_vector(const vector &vVec, double rScale);
