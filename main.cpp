@@ -26,9 +26,9 @@ int main(int argc, char **argv)
 	double rHeight, rWidth, rDh, rDw;
 
 	size_t nBWidth = 5;
-	nProcHorizontal = 2; nProcVertical = 2;
+	nProcHorizontal = 5; nProcVertical = 4;
 //	nProcHorizontal = 1; nProcVertical = 1;
-	rHeight = 1; rWidth = 1; rDh = 0.1, rDw = 0.05;
+	rHeight = 1; rWidth = 1; rDh = 0.01, rDw = 0.02;
 
 	fdm_grid_mpi grid(nRank, nProcVertical, nProcHorizontal, rHeight, rWidth, rDh, rDw);
 	sparse_matrix mA(grid.nodes_number(), nBWidth);
@@ -37,20 +37,42 @@ int main(int argc, char **argv)
 
 	Solvers::cgm_mpi cgm(grid.boundaries());
 
-	// calculate stiffness matrix and right part
 	grid.assemble_slae(mA, vRightPart);
 
 	size_t nIterationNum = cgm.solve(mA, vSolution, vRightPart, 1e-6);
 
+	if (nRank == 5)
+	{
+		std::cout << "5 Sizes: " << grid.rows_number() << " " << grid.columns_number() << std::endl;
+	}
+	if (nRank == 0)
+	{
+		std::cout << "0 Sizes: " << grid.rows_number() << " " << grid.columns_number() << std::endl;
+	}
 	// calc max error
-//	double rMaxError = 0.0;
-//	for (size_t nNode = 0; nNode < grid.nodes_number(); ++nNode)
-//	{
-//		rMaxError = std::max(fabs(vSolution[nNode] - Task::exact_solution(grid.coordinates(nNode))), rMaxError);
-//	}
+	if (nRank == 0)
+	{
+		double rMaxError = 0.0;
+		for (size_t nNode = 0; nNode < grid.nodes_number(); ++nNode)
+		{
+			rMaxError = std::max(fabs(vSolution[nNode] - Task::exact_solution(grid.coordinates(nNode))), rMaxError);
+		}
 
-//	std::cout << "Error = " << std::setprecision(10) << rMaxError << std::endl;
-//	std::cout << "#Iterations = " << nIterationNum << std::endl;
+		for (size_t nRow = 0; nRow < grid.rows_number(); ++nRow)
+		{
+			for (size_t nColumn = 0; nColumn < grid.columns_number(); ++nColumn)
+			{
+				size_t nNode = nRow * grid.columns_number() + nColumn;
+//				std::cout << std::setprecision(3) << std::round(fabs(vSolution[nNode] - Task::exact_solution(grid.coordinates(nNode))) * 1000) / 1000 << '\t';
+				std::cout << std::setprecision(3) << vSolution[nNode] << '\t';
+//				std::cout << std::setprecision(3) << Task::exact_solution(grid.coordinates(nNode)) << '\t';
+			}
+			std::cout << std::endl;
+		}
+
+		std::cout << "Error = " << std::setprecision(10) << rMaxError << std::endl;
+		std::cout << "#Iterations = " << nIterationNum << std::endl;
+	}
 
 //	std::cout << "Solution:\n";
 //	for (size_t nRow = 0; nRow < nGridParam; ++nRow)

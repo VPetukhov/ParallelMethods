@@ -25,7 +25,7 @@ namespace Solvers
 
 	private:
 		std::vector<MPI_Request> update_boundaries(vector &vSolution) const;
-		MPI_Datatype create_datatype(std::vector<int> indexes) const;
+		void create_datatype(std::vector<int> indexes, MPI_Datatype *datatype) const;
 		side_index get_opposite_side(side_index side) const;
 
 	public:
