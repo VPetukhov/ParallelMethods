@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <mpi.h>
 
 fdm_grid_mpi::fdm_grid_mpi(int nRank, int nProcVertical, int nProcHorizontal, double rHeight, double rWidth,
                            double rDh, double rDw)
@@ -19,25 +20,27 @@ fdm_grid_mpi::fdm_grid_mpi(int nRank, int nProcVertical, int nProcHorizontal, do
 
 	std::vector<int> vBoundaryProcesses(SIDES_NUMBER);
 	vBoundaryProcesses[LEFT] = nColumn == 0 ? NOT_PROCESS : nRank - 1;
-	vBoundaryProcesses[RIGHT] = nColumn == nProcHorizontal ? NOT_PROCESS : nRank + 1;
-	vBoundaryProcesses[BOTTOM] = nRow == nProcVertical ? NOT_PROCESS : nProcHorizontal * (nRow - 1) + nColumn;
+	vBoundaryProcesses[RIGHT] = nColumn == (nProcHorizontal - 1) ? NOT_PROCESS : nRank + 1;
+	vBoundaryProcesses[BOTTOM] = nRow == (nProcVertical - 1) ? NOT_PROCESS : nProcHorizontal * (nRow - 1) + nColumn;
 	vBoundaryProcesses[TOP] = nRow == 0 ? NOT_PROCESS : nProcHorizontal * (nRow + 1) + nColumn;
 
+	std::cout << nRank << ": (" << rStartX << ", " << rStartY << "); (" << rEndX << ", " << rEndY << "); (" << rDw << ", " << rDh << "); "
+	          << (size_t) ((rEndX - rStartX) / rDw)<< ", " << (size_t) ((rEndY - rStartY) / rDh) << "; " << std::endl;
 	this->init((size_t) ((rEndX - rStartX) / rDw), (size_t) ((rEndY - rStartY) / rDh), vBoundaryProcesses, rStartX, rStartY, rDw, rDh);
 }
 
 void fdm_grid_mpi::init(size_t nRowsNum, size_t nColumnsNum, std::vector<int> vBoundaryProcesses, double rStartX,
                         double rStartY, double rDw, double rDh)
 {
-	nRowsNum += 2;
-	nColumnsNum += 2;
+	nRowsNum += 1;
+	nColumnsNum += 1;
 
-	this->m_nNodesNumber = (nRowsNum + 1) * (nColumnsNum + 1);
+	this->m_nNodesNumber = nRowsNum * nColumnsNum;
 	this->m_rDS = rDw * rDh;
 
 	for (int nSideInd = 0; nSideInd < SIDES_NUMBER; ++nSideInd)
 	{
-		this->m_vBoundaries[nSideInd].process_rank = vBoundaryProcesses[nSideInd];
+		this->m_vBoundaries[nSideInd].nProcessRank = vBoundaryProcesses[nSideInd];
 	}
 
 	this->m_vIsBound.resize(this->m_nNodesNumber, false);
@@ -72,7 +75,7 @@ void fdm_grid_mpi::set_boundary(size_t nRecieveIndex, size_t nSendIndex, side_in
 {
 	this->m_vIsBound[nRecieveIndex] = true;
 
-	if (this->m_vBoundaries[nSideIndex].process_rank == NOT_PROCESS)
+	if (this->m_vBoundaries[nSideIndex].nProcessRank == NOT_PROCESS)
 	{
 		this->m_vIsConstantBound[nRecieveIndex] = true;
 	}
@@ -86,10 +89,10 @@ void fdm_grid_mpi::set_boundary(size_t nRecieveIndex, size_t nSendIndex, side_in
 std::vector<size_t> fdm_grid_mpi::fill_neighbours(size_t nRow, size_t nColumn, size_t nRowsNum, size_t nColumnsNum)
 {
 	std::vector<size_t> result(SIDES_NUMBER);
-	result[BOTTOM] = nRow == nRowsNum ? EMPTY_NEIGHBOUR : (nRow + 1) * nColumnsNum + nColumn;
+	result[BOTTOM] = nRow == (nRowsNum - 1) ? EMPTY_NEIGHBOUR : (nRow + 1) * nColumnsNum + nColumn;
 	result[TOP] = nRow == 0 ? EMPTY_NEIGHBOUR : (nRow - 1) * nColumnsNum + nColumn;
 	result[LEFT] = nColumn == 0 ? EMPTY_NEIGHBOUR : nRow * nColumnsNum + nColumn - 1;
-	result[RIGHT] = nColumn == nColumnsNum ? EMPTY_NEIGHBOUR : nRow * nColumnsNum + nColumn + 1;
+	result[RIGHT] = nColumn == (nColumnsNum - 1) ? EMPTY_NEIGHBOUR : nRow * nColumnsNum + nColumn + 1;
 	return result;
 }
 
@@ -101,12 +104,12 @@ void fdm_grid_mpi::assemble_slae(sparse_matrix &mSM, vector &vRightPart) const
 		{
 			// write boundary condition
 			mSM.at(nNode, nNode) = 1.0;
-			vRightPart[nNode] = this->m_vIsConstantBound[nNode] ? Task::bound_condition(this->coordinates(nNode)) : 0;
+			vRightPart[nNode] = this->m_vIsConstantBound[nNode] ? Task::bound_condition(this->m_vCoords[nNode]) : 0;
 		}
 		else
 		{
 			// write finite difference equation
-			vRightPart[nNode] = this->m_rDS * Task::right_part(this->coordinates(nNode));
+			vRightPart[nNode] = this->m_rDS * Task::right_part(this->m_vCoords[nNode]);
 			mSM.at(nNode, nNode) = 4.0;
 
 			for (size_t neighbourInd : this->m_vNeighbours[nNode])
@@ -114,15 +117,38 @@ void fdm_grid_mpi::assemble_slae(sparse_matrix &mSM, vector &vRightPart) const
 				if (neighbourInd == fdm_grid_mpi::EMPTY_NEIGHBOUR)
 					throw std::runtime_error("Unexpected index for neighbour to " + std::to_string(nNode));
 
+				if (neighbourInd > this->m_vCoords.size())
+					throw std::runtime_error("Index for neighbour to " + std::to_string(nNode) + " is too large (" +
+							                         std::to_string(neighbourInd) + " of " + std::to_string(this->m_vCoords.size()) + ")!");
+
 				if (!this->m_vIsBound[neighbourInd])
 				{
 					mSM.at(nNode, neighbourInd) = -1.0;
 				}
 				else if (this->m_vIsConstantBound[neighbourInd])
 				{
-					vRightPart[nNode] -= -1.0 * Task::bound_condition(this->coordinates(neighbourInd));
+					vRightPart[nNode] -= -1.0 * Task::bound_condition(this->m_vCoords[neighbourInd]);
 				}
 			}
 		}
 	}
+
+	int nRank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &nRank);
+	std::cout << nRank << ": SLAE assembled." << std::endl;
+}
+
+const std::vector<fdm_grid_mpi::boundaries_list> &fdm_grid_mpi::boundaries() const
+{
+	return this->m_vBoundaries;
+}
+
+size_t fdm_grid_mpi::nodes_number() const
+{
+	return this->m_nNodesNumber;
+}
+
+const fdm_grid_mpi::coord &fdm_grid_mpi::coordinates(size_t nIndex) const
+{
+	return this->m_vCoords.at(nIndex);
 }

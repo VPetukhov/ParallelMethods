@@ -11,7 +11,10 @@ namespace Solvers
 		for (int i = 0; i < side_index::SIDES_NUMBER; ++i)
 		{
 			auto const &boundInfo = vBoundaryProcs[i];
-			this->vBoundaryProcs[i].nProcessRank = boundInfo.process_rank;
+			this->vBoundaryProcs[i].nProcessRank = boundInfo.nProcessRank;
+			if (boundInfo.nProcessRank == fdm_grid_mpi::NOT_PROCESS)
+				continue;
+
 			this->vBoundaryProcs[i].receive_t = this->create_datatype(boundInfo.boundaries_to_receive);
 			this->vBoundaryProcs[i].send_t = this->create_datatype(boundInfo.boundaries_to_send);
 		}
@@ -55,18 +58,24 @@ namespace Solvers
 
 	std::vector<MPI_Request> cgm_mpi::update_boundaries(vector &vSolution) const
 	{
-		std::vector<MPI_Request> vSendRequests(this->vBoundaryProcs.size());
-		std::vector<MPI_Request> vReceiveRequests(this->vBoundaryProcs.size());
+		std::vector<MPI_Request> vSendRequests(this->vBoundaryProcs.size(), MPI_REQUEST_NULL);
+		std::vector<MPI_Request> vReceiveRequests(this->vBoundaryProcs.size(), MPI_REQUEST_NULL);
 
 		for (int i = 0; i < this->vBoundaryProcs.size(); ++i)
 		{
 			auto const &proc = this->vBoundaryProcs[i];
+			if (proc.nProcessRank == fdm_grid_mpi::NOT_PROCESS)
+				continue;
+
 			MPI_Irecv(&vSolution[0], 1, proc.receive_t, proc.nProcessRank, i, MPI_COMM_WORLD, &vReceiveRequests[i]);
 		}
 
 		for (int i = 0; i < this->vBoundaryProcs.size(); ++i)
 		{
 			auto const &proc = this->vBoundaryProcs[i];
+			if (proc.nProcessRank == fdm_grid_mpi::NOT_PROCESS)
+				continue;
+
 			MPI_Isend(&vSolution[0], 1, proc.send_t, proc.nProcessRank, this->get_opposite_side((side_index)i), MPI_COMM_WORLD, &vSendRequests[i]);
 		}
 
@@ -79,9 +88,12 @@ namespace Solvers
 	MPI_Datatype cgm_mpi::create_datatype(std::vector<int> indexes) const
 	{
 		MPI_Datatype res;
-		size_t receive_size = indexes.size();
-		std::vector<int> receive_lens(receive_size, 1);
-		MPI_Type_indexed((int)receive_size, receive_lens.data(), indexes.data(), MPI_INT, &res);
+		std::vector<int> element_lens(indexes.size(), 1);
+		int nRank;
+		MPI_Comm_rank(MPI_COMM_WORLD, &nRank);
+		std::cout << nRank << ": " << indexes.size() << " " << element_lens.size() << std::endl;
+
+		MPI_Type_indexed((int)indexes.size(), element_lens.data(), indexes.data(), MPI_INT, &res);
 		return res;
 	}
 

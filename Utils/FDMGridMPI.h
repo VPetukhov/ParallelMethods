@@ -17,7 +17,7 @@ public:
 	{
 		std::vector<int> boundaries_to_send;
 		std::vector<int> boundaries_to_receive;
-		int process_rank;
+		int nProcessRank;
 	};
 
 	enum side_index : int
@@ -48,24 +48,14 @@ private:
 	void init(size_t nRowsNum, size_t nColumnsNum, std::vector<int> vBoundaryProcesses, double rStartX,
 	          double rStartY, double rDw, double rDh);
 
+	void set_boundary(size_t nRecieveIndex, size_t nSendIndex, side_index nSideIndex);
+
 public:
 	fdm_grid_mpi(int nRank, int nProcVertical, int nProcHorizontal, double rHeight, double rWidth,
 		             double rDh, double rDw);
 
-	~fdm_grid_mpi()
-	{}
-
-	const coord& coordinates(size_t nIndex) const
-	{
-		return this->m_vCoords.at(nIndex);
-	}
-
-	size_t nodes_number() const
-	{
-		return this->m_nNodesNumber;
-	}
-
+	const coord& coordinates(size_t nIndex) const;
+	size_t nodes_number() const;
+	const std::vector<boundaries_list> &boundaries() const;
 	void assemble_slae(sparse_matrix &mSM, vector &vRightPart) const;
-
-	void set_boundary(size_t nRecieveIndex, size_t nSendIndex, side_index nSideIndex);
 };
