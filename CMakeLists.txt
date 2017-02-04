@@ -10,7 +10,7 @@ include_directories(${INCLUDE_DIRS})
 
 set(LIBRARIES ${Boost_LIBRARIES})
 
-FILE(GLOB UTIL_SOURCES Utils/*.cpp)
+FILE(GLOB UTIL_SOURCES Utils/*.cpp Solvers/*.cpp)
 add_library(Utils ${UTIL_SOURCES})
 
 set(SOURCE_FILES main.cpp)

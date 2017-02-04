@@ -4,6 +4,9 @@
 #include <vector>
 #include <limits>
 
+class sparse_matrix;
+class vector;
+
 class fdm_grid
 {
 public:
@@ -22,9 +25,9 @@ private:
 	std::vector<bool> m_vBoundFlag;
 
 	const size_t m_nNodesNumber;
-public:
-	static const size_t EMPTY_NEIGHBOUR = std::numeric_limits<size_t>::max();
 	const double m_rH;
+
+	static const size_t EMPTY_NEIGHBOUR = std::numeric_limits<size_t>::max();
 
 private:
 	std::vector<size_t> fill_neighbours(size_t nRow, size_t nColumn, size_t nRowsNum, size_t nColumnsNum);
@@ -50,5 +53,5 @@ public:
 		return this->m_nNodesNumber;
 	}
 
-	const std::vector<size_t>& neighbours(size_t nNode) const;
+	void assemble_slae(sparse_matrix &mSM, vector &vRightPart) const;
 };

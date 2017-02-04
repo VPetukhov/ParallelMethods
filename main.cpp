@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <iostream>
 #include <iomanip>
+#include <Utils/FDMGridMPI.h>
 
 #include "TaskFunctions.h"
-#include "FDMApproximation.h"
-#include "Solvers.h"
+#include "Solvers/Functions.h"
 
 int main()
 {
@@ -25,10 +25,10 @@ int main()
 	vector vSolution(grid.nodes_number()), vRightPart(grid.nodes_number());
 
 	// calculate stiffness matrix and right part
-	fdm_slau_assembling(grid, mA, vRightPart);
+	grid.assemble_slae(mA, vRightPart);
 
 	// solve SLAE
-	size_t nIterationNum = PCGM(mA, vSolution, vRightPart, 1e-9);
+	size_t nIterationNum = Solvers::CGM(mA, vSolution, vRightPart, 1e-9);
 
 	// calc max error
 	double rMaxError = 0.0;
@@ -37,7 +37,6 @@ int main()
 		rMaxError = std::max(fabs(vSolution[nNode] - Task::exact_solution(grid.coordinates(nNode))), rMaxError);
 	}
 
-	std::cout << "h = " << std::setprecision(5) << grid.m_rH << std::endl;
 	std::cout << "Error = " << std::setprecision(10) << rMaxError << std::endl;
 	std::cout << "#Iterations = " << nIterationNum << std::endl;
 

@@ -143,7 +143,18 @@ void vector::add_scale_vector(const vector &vVec, double rScale)
 	{
 		(*this)[nI] += vVec[nI] * rScale;
 	}
-} // end of add_scale_vector
+}
+
+vector vector::operator-(const vector &vVec) const
+{
+	vector r(*this);
+	for (size_t nI = 0; nI < vVec.size(); ++nI)
+	{
+		r[nI] -= vVec[nI];
+	}
+	return r;
+}
+// end of add_scale_vector
 
 
 

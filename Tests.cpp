@@ -3,13 +3,28 @@
 
 #include <iostream>
 #include <boost/test/unit_test.hpp>
+#include <Solvers/CGM_MPI.h>
+#include <Utils/FDMGrid.h>
+#include <Utils/TaskFunctions.h>
 
-#include "Utils/Solvers.h"
+#include "Solvers/Functions.h"
 #include "Utils/SparseMatrix.h"
 
-BOOST_AUTO_TEST_SUITE(TestTools)
+BOOST_AUTO_TEST_SUITE(Tests)
 
-	BOOST_AUTO_TEST_CASE(testSparseMatrix)
+	BOOST_AUTO_TEST_CASE(test_vector)
+	{
+		double d1[5] = {1, 2, 3, 4, 5};
+		double d2[5] = {0, 1, 2, 3, 4};
+		vector v1(std::valarray<double>(d1, 5));
+		vector v2(std::valarray<double>(d2, v1.size()));
+
+
+		BOOST_CHECK((v1 - v1).apply(std::fabs).max() < 1e-7);
+		BOOST_CHECK(std::abs((v1 - v2).apply(std::fabs).max() - 1) < 1e-7);
+	}
+
+	BOOST_AUTO_TEST_CASE(test_sparse_matrix)
 	{
 		const int rank = 5;
 		double a[rank][rank] = {
@@ -38,7 +53,7 @@ BOOST_AUTO_TEST_SUITE(TestTools)
 		}
 	}
 
-	BOOST_AUTO_TEST_CASE(testPCGMTrivial)
+	BOOST_AUTO_TEST_CASE(test_pcgm_trivial)
 	{
 		const int equationRank = 4;
 		const double eps = 1e-7;
@@ -53,7 +68,7 @@ BOOST_AUTO_TEST_SUITE(TestTools)
 		vRightPart[1] = 2;
 
 		vector vSol(equationRank);
-		PCGM(mA, vSol, vRightPart, eps);
+		Solvers::CGM(mA, vSol, vRightPart, eps);
 
 		for (size_t i = 0; i < equationRank; ++i)
 		{
@@ -61,7 +76,7 @@ BOOST_AUTO_TEST_SUITE(TestTools)
 		}
 	}
 
-	BOOST_AUTO_TEST_CASE(testPCGMRandom)
+	BOOST_AUTO_TEST_CASE(test_pcgm)
 	{
 		const int equationRank = 5;
 		const double eps = 1e-5;
@@ -75,6 +90,7 @@ BOOST_AUTO_TEST_SUITE(TestTools)
 		};
 		double b[equationRank] = {0.565811, 0.505768, 0.816686, 0.584653, 0.0253342};
 		double solution[equationRank] = {2.44934048, 2.98386069, 3.24620609, -0.16122111, 1.41784955};
+		vector vSolution(std::valarray<double>(solution, equationRank));
 
 
 		sparse_matrix mA(equationRank, equationRank);
@@ -89,17 +105,68 @@ BOOST_AUTO_TEST_SUITE(TestTools)
 		}
 
 		vector vSol(equationRank);
-		PCGM(mA, vSol, vRightPart, eps / 1000);
+		Solvers::CGM(mA, vSol, vRightPart, eps / 1000);
 
-		for (int i = 0; i < equationRank; ++i)
+		BOOST_CHECK((vSol - vSolution).apply(std::fabs).max() < eps);
+		BOOST_CHECK((mA.vector_multiply(vSol) - vRightPart).norm_inf() < eps);
+	}
+
+	BOOST_AUTO_TEST_CASE(test_cgm_mpi)
+	{
+		const int equationRank = 5;
+		const double eps = 1e-5;
+
+		double a[equationRank][equationRank] = {
+				{0.466004,-0.206244,-0.0322768,0.262886,0.13187},
+				{-0.206244,0.439495,0.027306,-0.0494091,-0.28005},
+				{-0.0322768,0.027306,0.269317,-0.00742683,-0.0431571},
+				{0.262886,-0.0494091,-0.00742683,0.439013,0.12912},
+				{0.13187,-0.28005,-0.0431571,0.12912,0.492918}
+		};
+		double b[equationRank] = {0.565811, 0.505768, 0.816686, 0.584653, 0.0253342};
+		double solution[equationRank] = {2.44934048, 2.98386069, 3.24620609, -0.16122111, 1.41784955};
+		vector vSolution(std::valarray<double>(solution, equationRank));
+
+
+		sparse_matrix mA(equationRank, equationRank);
+		vector vRightPart(equationRank);
+		for (size_t i = 0; i < equationRank; ++i)
 		{
-			std::cout << vSol[i] << " " << solution[i] << std::endl;
-			BOOST_CHECK(std::abs(vSol[i] - solution[i]) < eps);
+			for (size_t j = 0; j < equationRank; ++j)
+			{
+				mA.at(i, j) = a[i][j];
+			}
+			vRightPart[i] = b[i];
 		}
-		vector residuals = mA.vector_multiply(vSol);
-		residuals -=  vRightPart;
-		std::cout << residuals.norm_inf() << std::endl;
-		BOOST_CHECK(residuals.norm_inf() < eps);
+
+		vector vSol(equationRank);
+		Solvers::cgm_mpi cgm(0, 1);
+		cgm.solve(mA, vSol, vRightPart, eps / 1000);
+
+		BOOST_CHECK((vSol - vSolution).apply(std::fabs).max() < eps);
+		BOOST_CHECK((mA.vector_multiply(vSol) - vRightPart).norm_inf() < eps);
+	}
+
+	BOOST_AUTO_TEST_CASE(test_cgm_mpi_real)
+	{
+		size_t nGridParam = 4, nBWidth = 5;
+		fdm_grid grid(nGridParam);
+
+		sparse_matrix mA(grid.nodes_number(), nBWidth);
+		vector vSolution(grid.nodes_number()), vRightPart(grid.nodes_number());
+
+		grid.assemble_slae(mA, vRightPart);
+
+		Solvers::cgm_mpi cgm(0, 1);
+		cgm.solve(mA, vSolution, vRightPart, 1e-5);
+		// calc max error
+		double rMaxError = 0.0;
+		for (size_t nNode = 0; nNode < grid.nodes_number(); ++nNode)
+		{
+			rMaxError = std::max(fabs(vSolution[nNode] - Task::exact_solution(grid.coordinates(nNode))), rMaxError);
+		}
+
+		BOOST_CHECK(rMaxError < 1e-3);
 	}
 
 BOOST_AUTO_TEST_SUITE_END()

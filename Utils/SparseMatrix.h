@@ -80,7 +80,13 @@ public:
 			: base_type(rDefault, nSize)
 	{}
 
+	explicit vector(const std::valarray<double>& arr)
+		: base_type(arr)
+	{}
+
 	double operator*(const vector &vVec) const;
+
+	vector operator-(const vector &vVec) const;
 
 	vector &operator*=(double rScale);
 
