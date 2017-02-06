@@ -21,15 +21,23 @@ namespace Solvers
 		};
 
 	private:
-		std::vector<boundaries_list> vBoundaryProcs;
+		std::vector<boundaries_list> m_vBoundaryProcs;
+		std::vector<std::vector<size_t>> m_vNeighbours;
+		std::vector<bool> m_vBoundFlag;
 
 	private:
-		std::vector<MPI_Request> update_boundaries(vector &vSolution) const;
+		void update_boundaries(vector &vSolution, vector &vRightPartDelta) const;
 		void create_datatype(std::vector<int> indexes, MPI_Datatype *datatype) const;
-		side_index get_opposite_side(side_index side) const;
+
+		template < typename T >
+		std::ostream& print_vector(const T &vArr, int nIndDisplace = 0, int nMaxInd = -1, const std::string &sPrefix = "",
+		                           bool bOutIndex=false, const std::string &sDelim = "\t") const;
 
 	public:
-		cgm_mpi(const std::vector<fdm_grid_mpi::boundaries_list> &vBoundaryProcs);
-		size_t solve(const sparse_matrix &mA, vector &vSol, const vector &vRightPart, double rEps);
+		cgm_mpi(const std::vector<fdm_grid_mpi::boundaries_list> &vBoundaryProcs,
+				        const std::vector<std::vector<size_t>> &vNeighbours, const std::vector<bool> &vBoundFlag);
+		size_t solve(const sparse_matrix &mA, vector &vSol, const vector &vRightPart, double rEps, int nMaxIter);
+
+		void update_right_part(const std::vector<double> &vBoundaryValues, vector &vRightPartDelta) const;
 	};
 }

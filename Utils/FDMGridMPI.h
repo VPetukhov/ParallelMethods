@@ -30,6 +30,7 @@ public:
 	};
 
 	static const int NOT_PROCESS = -1;
+	static const size_t EMPTY_NEIGHBOUR = std::numeric_limits<size_t>::max();
 
 private:
 	std::vector<coord> m_vCoords;
@@ -40,8 +41,6 @@ private:
 
 	size_t m_nNodesNumber, m_nRowsNum, m_nColumnsNum;
 	double m_rDS;
-
-	static const size_t EMPTY_NEIGHBOUR = std::numeric_limits<size_t>::max();
 
 private:
 	std::vector<size_t> fill_neighbours(size_t nRow, size_t nColumn, size_t nRowsNum, size_t nColumnsNum);
@@ -61,5 +60,7 @@ public:
 	size_t columns_number() const;
 
 	const std::vector<boundaries_list> &boundaries() const;
+	const std::vector<std::vector<size_t>> &neighbours() const;
+	const std::vector<bool> &bound_flags() const;
 	void assemble_slae(sparse_matrix &mSM, vector &vRightPart) const;
 };

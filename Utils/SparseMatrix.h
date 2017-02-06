@@ -88,6 +88,8 @@ public:
 
 	vector operator-(const vector &vVec) const;
 
+	vector operator+(const vector &vVec) const;
+
 	vector &operator*=(double rScale);
 
 	vector &operator=(double rRight)

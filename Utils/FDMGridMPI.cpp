@@ -120,10 +120,10 @@ void fdm_grid_mpi::set_boundary(size_t nRecieveIndex, size_t nSendIndex, side_in
 std::vector<size_t> fdm_grid_mpi::fill_neighbours(size_t nRow, size_t nColumn, size_t nRowsNum, size_t nColumnsNum)
 {
 	std::vector<size_t> result(SIDES_NUMBER);
-	result[BOTTOM] = nRow == nRowsNum ? EMPTY_NEIGHBOUR : (nRow + 1) * nColumnsNum + nColumn;
+	result[BOTTOM] = nRow == (nRowsNum - 1) ? EMPTY_NEIGHBOUR : (nRow + 1) * nColumnsNum + nColumn;
 	result[TOP] = nRow == 0 ? EMPTY_NEIGHBOUR : (nRow - 1) * nColumnsNum + nColumn;
 	result[LEFT] = nColumn == 0 ? EMPTY_NEIGHBOUR : nRow * nColumnsNum + nColumn - 1;
-	result[RIGHT] = nColumn == nColumnsNum ? EMPTY_NEIGHBOUR : nRow * nColumnsNum + nColumn + 1;
+	result[RIGHT] = nColumn == (nColumnsNum - 1) ? EMPTY_NEIGHBOUR : nRow * nColumnsNum + nColumn + 1;
 
 	if (nColumn == nColumnsNum || nColumn == 0)
 	{
@@ -195,10 +195,6 @@ void fdm_grid_mpi::assemble_slae(sparse_matrix &mSM, vector &vRightPart) const
 			}
 		}
 	}
-
-//	int nRank;
-//	MPI_Comm_rank(MPI_COMM_WORLD, &nRank);
-//	std::cout << nRank << ": SLAE assembled." << std::endl;
 }
 
 const std::vector<fdm_grid_mpi::boundaries_list> &fdm_grid_mpi::boundaries() const
@@ -224,4 +220,14 @@ size_t fdm_grid_mpi::rows_number() const
 size_t fdm_grid_mpi::columns_number() const
 {
 	return this->m_nColumnsNum;
+}
+
+const std::vector<std::vector<size_t>> &fdm_grid_mpi::neighbours() const
+{
+	return this->m_vNeighbours;
+}
+
+const std::vector<bool> &fdm_grid_mpi::bound_flags() const
+{
+	return this->m_vIsBound;
 }

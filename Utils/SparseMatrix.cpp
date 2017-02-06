@@ -154,6 +154,16 @@ vector vector::operator-(const vector &vVec) const
 	}
 	return r;
 }
+
+vector vector::operator+(const vector &vVec) const
+{
+	vector r(*this);
+	for (size_t nI = 0; nI < vVec.size(); ++nI)
+	{
+		r[nI] += vVec[nI];
+	}
+	return r;
+}
 // end of add_scale_vector
 
 
